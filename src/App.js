@@ -2,8 +2,36 @@ import "./App.css";
 import { useState, useEffect } from "react";
 import { Chart } from "react-google-charts";
 import sandio from "sandio";
+import "beautiful-react-diagrams/styles.css";
+import Diagram, { createSchema, useSchema } from "beautiful-react-diagrams";
 
 function App() {
+  // the diagram model
+  const initialSchema = createSchema({
+    nodes: [
+      { id: "node-1", content: "Node 1", coordinates: [250, 60] },
+      { id: "node-2", content: "Node 2", coordinates: [100, 200] },
+      { id: "node-3", content: "Node 3", coordinates: [250, 220] },
+      { id: "node-4", content: "Node 4", coordinates: [400, 200] },
+    ],
+    links: [
+      { input: "node-1", output: "node-2" },
+      { input: "node-1", output: "node-3" },
+      { input: "node-1", output: "node-4" },
+    ],
+  });
+
+  const UncontrolledDiagram = () => {
+    // create diagrams schema
+    const [schema, { onChange }] = useSchema(initialSchema);
+
+    return (
+      <div style={{ height: "22.5rem" }}>
+        <Diagram schema={schema} onChange={onChange} />
+      </div>
+    );
+  };
+
   // keep raw data as list of dict
   const [raw, setRaw] = useState([]);
   useEffect(() => {
@@ -70,19 +98,7 @@ function App() {
   ];
   return (
     <div className="App">
-      <header className="App-header">
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <UncontrolledDiagram />
       <div className={"my-pretty-chart-container"}>
         <Chart
           chartType="ScatterChart"
