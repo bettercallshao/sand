@@ -1,5 +1,5 @@
 import "./App.css";
-import { useState, useEffect } from "react";
+import { useState, useEffect, cloneElement } from "react";
 import { Chart } from "react-google-charts";
 import sandio from "sandio";
 import "beautiful-react-diagrams/styles.css";
@@ -7,20 +7,48 @@ import Diagram, { createSchema, useSchema } from "beautiful-react-diagrams";
 
 function App() {
   // the diagram model
+  const CustomNode = (props) => {
+    const { content, inputs, outputs, type } = props;
+
+    return (
+      <div
+        className="bi bi-diagram-node bi-diagram-node-default"
+        style={{ width: "4rem" }}
+      >
+        {content}
+        <div className="bi-port-wrapper">
+          <div className="bi-input-ports">
+            {inputs.map((port) => cloneElement(port, {}, <>{port.key}</>))}
+          </div>
+          <div className="bi-output-ports">
+            {outputs.map((port) => cloneElement(port, {}, <>{port.key}</>))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const initialSchema = createSchema({
     nodes: [
-      { id: "node-1", content: "Node 1", coordinates: [250, 60] },
-      { id: "node-2", content: "Node 2", coordinates: [100, 200] },
-      { id: "node-3", content: "Node 3", coordinates: [250, 220] },
-      { id: "node-4", content: "Node 4", coordinates: [400, 200] },
-    ],
-    links: [
-      { input: "node-1", output: "node-2" },
-      { input: "node-1", output: "node-3" },
-      { input: "node-1", output: "node-4" },
+      {
+        id: "node-1",
+        content: "Node 1",
+        coordinates: [150, 60],
+        render: CustomNode,
+        outputs: [{ id: "x", alignment: "right" }],
+      },
+      {
+        id: "node-custom",
+        content: "asdf",
+        coordinates: [250, 60],
+        render: CustomNode,
+        inputs: [
+          { id: "a", alignment: "left" },
+          { id: "b", alignment: "left" },
+        ],
+      },
     ],
   });
-
   const UncontrolledDiagram = () => {
     // create diagrams schema
     const [schema, { onChange }] = useSchema(initialSchema);
