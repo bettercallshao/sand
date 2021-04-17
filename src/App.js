@@ -11,47 +11,39 @@ function App() {
   const sep = ":>";
   const boxType = sandio.builtinBoxType;
 
-  // the diagram model
-  const CustomNode = (props) => {
-    const { content, inputs, outputs, type } = props;
+  const initialSchema = createSchema({});
+  const UncontrolledDiagram = () => {
+    const handleRemove = (id) => {
+      removeNode(schema.nodes.find((n) => n.id === id));
+    };
 
-    return (
-      <div
-        className="bi bi-diagram-node bi-diagram-node-default"
-        style={{ width: "4rem" }}
-      >
-        {content}
-        <div className="bi-port-wrapper">
-          <div className="bi-input-ports">
-            {inputs.map((port) =>
-              cloneElement(port, {}, <>{port.props.content}</>)
-            )}
-          </div>
-          <div className="bi-output-ports">
-            {outputs.map((port) =>
-              cloneElement(port, {}, <>{port.props.content}</>)
-            )}
+    // the diagram model
+    const CustomNode = (props) => {
+      const { id, content, inputs, outputs, type } = props;
+
+      return (
+        <div
+          className="bi bi-diagram-node bi-diagram-node-default"
+          style={{ width: "4rem" }}
+        >
+          <button onClick={() => handleRemove(id)}>x</button>
+          {content}
+          <div className="bi-port-wrapper">
+            <div className="bi-input-ports">
+              {inputs.map((port) =>
+                cloneElement(port, {}, <>{port.props.content}</>)
+              )}
+            </div>
+            <div className="bi-output-ports">
+              {outputs.map((port) =>
+                cloneElement(port, {}, <>{port.props.content}</>)
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    );
-  };
+      );
+    };
 
-  const initialSchema = createSchema({
-    nodes: [
-      {
-        id: "node-custom",
-        content: "asdf",
-        coordinates: [250, 60],
-        render: CustomNode,
-        inputs: [
-          { id: "aa", alignment: "left" },
-          { id: "bb", alignment: "left" },
-        ],
-      },
-    ],
-  });
-  const UncontrolledDiagram = () => {
     // create diagrams schema
     const [schema, { onChange, addNode, removeNode }] = useSchema(
       initialSchema
@@ -60,7 +52,7 @@ function App() {
     const [id, setId] = useState();
     const [type, setType] = useState(options[0]);
     const handleCreate = (event) => {
-      const bt = boxType.filter((bt) => bt.Id == type)[0];
+      const bt = boxType.find((bt) => bt.Id == type);
       addNode({
         id,
         content: id,
