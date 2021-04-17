@@ -4,8 +4,13 @@ import { Chart } from "react-google-charts";
 import sandio from "sandio";
 import "beautiful-react-diagrams/styles.css";
 import Diagram, { createSchema, useSchema } from "beautiful-react-diagrams";
+import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
+import "react-tabs/style/react-tabs.css";
 
 function App() {
+  const sep = ":>";
+  const boxType = sandio.builtinBoxType;
+
   // the diagram model
   const CustomNode = (props) => {
     const { content, inputs, outputs, type } = props;
@@ -18,10 +23,14 @@ function App() {
         {content}
         <div className="bi-port-wrapper">
           <div className="bi-input-ports">
-            {inputs.map((port) => cloneElement(port, {}, <>{port.key}</>))}
+            {inputs.map((port) =>
+              cloneElement(port, {}, <>{port.props.content}</>)
+            )}
           </div>
           <div className="bi-output-ports">
-            {outputs.map((port) => cloneElement(port, {}, <>{port.key}</>))}
+            {outputs.map((port) =>
+              cloneElement(port, {}, <>{port.props.content}</>)
+            )}
           </div>
         </div>
       </div>
@@ -31,31 +40,72 @@ function App() {
   const initialSchema = createSchema({
     nodes: [
       {
-        id: "node-1",
-        content: "Node 1",
-        coordinates: [150, 60],
-        render: CustomNode,
-        outputs: [{ id: "x", alignment: "right" }],
-      },
-      {
         id: "node-custom",
         content: "asdf",
         coordinates: [250, 60],
         render: CustomNode,
         inputs: [
-          { id: "a", alignment: "left" },
-          { id: "b", alignment: "left" },
+          { id: "aa", alignment: "left" },
+          { id: "bb", alignment: "left" },
         ],
       },
     ],
   });
   const UncontrolledDiagram = () => {
     // create diagrams schema
-    const [schema, { onChange }] = useSchema(initialSchema);
+    const [schema, { onChange, addNode, removeNode }] = useSchema(
+      initialSchema
+    );
+    const options = boxType.map((m) => m.Id);
+    const [id, setId] = useState();
+    const [type, setType] = useState(options[0]);
+    const handleCreate = (event) => {
+      const bt = boxType.filter((bt) => bt.Id == type)[0];
+      addNode({
+        id,
+        content: id,
+        coordinates: [10, 10],
+        render: CustomNode,
+        inputs: bt.Input.map((i) => ({
+          id: id + sep + i.Id,
+          content: i.Id,
+          alignment: "left",
+        })),
+        outputs: bt.Output.map((i) => ({
+          id: id + sep + i.Id,
+          content: i.Id,
+          alignment: "right",
+        })),
+      });
+      event.preventDefault();
+    };
+    const handleId = (event) => {
+      setId(event.target.value);
+    };
+    const handleType = (event) => {
+      setType(event.target.value);
+    };
 
     return (
-      <div style={{ height: "22.5rem" }}>
-        <Diagram schema={schema} onChange={onChange} />
+      <div>
+        <form onSubmit={handleCreate}>
+          <label>
+            Id
+            <input type="text" name="id" value={id} onChange={handleId} />
+          </label>
+          <label>
+            Type
+            <select value={type} onChange={handleType}>
+              {options.map((value) => (
+                <option value={value}>{value}</option>
+              ))}
+            </select>
+          </label>
+          <input type="submit" value="Create" />
+        </form>
+        <div style={{ width: "60rem", height: "30rem" }}>
+          <Diagram schema={schema} onChange={onChange} />
+        </div>
       </div>
     );
   };
@@ -126,16 +176,26 @@ function App() {
   ];
   return (
     <div className="App">
-      <UncontrolledDiagram />
-      <div className={"my-pretty-chart-container"}>
-        <Chart
-          chartType="ScatterChart"
-          data={extractXy(raw, "cons0:x", "pers0:sx")}
-          width="100%"
-          height="400px"
-          legendToggle
-        />
-      </div>
+      <Tabs>
+        <TabList>
+          <Tab>Diagram</Tab>
+          <Tab>Graph</Tab>
+        </TabList>
+        <TabPanel>
+          <UncontrolledDiagram />
+        </TabPanel>
+        <TabPanel>
+          <div className={"my-pretty-chart-container"}>
+            <Chart
+              chartType="ScatterChart"
+              data={extractXy(raw, "cons0:x", "pers0:sx")}
+              width="30rem"
+              height="30rem"
+              legendToggle
+            />
+          </div>
+        </TabPanel>
+      </Tabs>
     </div>
   );
 }
