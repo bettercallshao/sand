@@ -8,26 +8,80 @@ import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
 
 function App() {
-  const sep = ":>";
-  const boxType = sandio.builtinBoxType;
+  const config = {
+    StepCount: 2000,
+    StepSize: 0.01,
+    Separator: ":",
+  };
 
-  const initialSchema = createSchema({});
+  const boxType = sandio.builtinBoxType.reduce(
+    (res, bt) => ({ ...res, [bt.Id]: bt }),
+    {}
+  );
+
+  const ioFromDiagram = (schema) => {
+    const linkMap = schema.links.reduce(
+      (dict, l) => ({ ...dict, [l.input]: l.output }),
+      {}
+    );
+    const variable = schema.nodes.reduce(
+      (a1, n) => [
+        ...a1,
+        ...n.outputs.reduce(
+          (a2, o) => [...a2, { Id: o.id, Type: o.data.type, value: 0 }],
+          []
+        ),
+        ...n.inputs.reduce((a2, i) => {
+          if (!linkMap[i.id]) {
+            a2.push({
+              Id: config.Separator + i.id,
+              Type: i.data.type,
+              value: 0,
+            });
+          }
+          return a2;
+        }, []),
+      ],
+      []
+    );
+    const box = schema.nodes.reduce(
+      (arr, n) => [
+        ...arr,
+        {
+          Id: n.id,
+          Type: n.data.type,
+          Input: n.inputs.map((i) => ({
+            Id: i.content,
+            Source: linkMap[i.id] || i.id,
+          })),
+        },
+      ],
+      []
+    );
+    return {
+      Version: "v1",
+      Config: config,
+      Box: box,
+      Variable: variable,
+    };
+  };
+
   const UncontrolledDiagram = () => {
     const handleRemove = (id) => {
-      removeNode(schema.nodes.find((n) => n.id === id));
+      removeNode({ id });
     };
 
     // the diagram model
     const CustomNode = (props) => {
-      const { id, content, inputs, outputs, type } = props;
+      const { id, content, inputs, outputs } = props;
 
       return (
         <div
           className="bi bi-diagram-node bi-diagram-node-default"
           style={{ width: "4rem" }}
         >
-          <button onClick={() => handleRemove(id)}>x</button>
           {content}
+          <button onClick={() => handleRemove(id)}>x</button>
           <div className="bi-port-wrapper">
             <div className="bi-input-ports">
               {inputs.map((port) =>
@@ -45,29 +99,35 @@ function App() {
     };
 
     // create diagrams schema
-    const [schema, { onChange, addNode, removeNode }] = useSchema(
-      initialSchema
-    );
-    const options = boxType.map((m) => m.Id);
+    const [schema, { onChange, removeNode }] = useSchema(createSchema({}));
+    const options = Object.keys(boxType);
     const [id, setId] = useState();
     const [type, setType] = useState(options[0]);
     const handleCreate = (event) => {
-      const bt = boxType.find((bt) => bt.Id == type);
-      addNode({
-        id,
-        content: id,
-        coordinates: [10, 10],
-        render: CustomNode,
-        inputs: bt.Input.map((i) => ({
-          id: id + sep + i.Id,
-          content: i.Id,
-          alignment: "left",
-        })),
-        outputs: bt.Output.map((i) => ({
-          id: id + sep + i.Id,
-          content: i.Id,
-          alignment: "right",
-        })),
+      const bt = boxType[type];
+      onChange({
+        nodes: [
+          ...schema.nodes,
+          {
+            id,
+            data: { type },
+            content: id,
+            coordinates: [10, 10],
+            render: CustomNode,
+            inputs: bt.Input.map((i) => ({
+              id: id + config.Separator + i.Id,
+              content: i.Id,
+              data: { type: i.Type },
+              alignment: "left",
+            })),
+            outputs: bt.Output.map((i) => ({
+              id: id + config.Separator + i.Id,
+              content: i.Id,
+              data: { type: i.Type },
+              alignment: "right",
+            })),
+          },
+        ],
       });
       event.preventDefault();
     };
@@ -77,6 +137,11 @@ function App() {
     const handleType = (event) => {
       setType(event.target.value);
     };
+
+    const [io, setIo] = useState({});
+    useEffect(() => {
+      setIo(ioFromDiagram(schema));
+    }, [schema]);
 
     return (
       <div>
