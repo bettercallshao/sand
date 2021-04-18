@@ -215,14 +215,21 @@ const DiagramPage = (props) => {
 const GraphPage = (props) => {
   const { io, setErr } = props;
   const [raw, setRaw] = useState([]);
-  const [xAxis, setXAsix] = useState("length");
-  const [yAxis, setYAsix] = useState("a:x");
+  const [xAxis, setXAxis] = useState("length");
+  const [yAxis, setYAxis] = useState("length");
   const [stepCount, setStepCount] = useState(50);
   const [stepSize, setStepSize] = useState(0.01);
   const extractXy = () => [
     [xAxis, yAxis],
     ...raw.map((line) => [line[xAxis], line[yAxis]]),
   ];
+  const getOptions = () => {
+    return [{ Id: "length" }, ...(io.Variable || [])].map((v) => (
+      <option key={v.Id} value={v.Id}>
+        {v.Id}
+      </option>
+    ));
+  };
   useEffect(() => {
     try {
       setRaw([]);
@@ -272,6 +279,28 @@ const GraphPage = (props) => {
               setStepSize(parseFloat(e.target.value));
             }}
           />
+        </label>
+        <label>
+          XAxis
+          <select
+            value={xAxis}
+            onChange={(e) => {
+              setXAxis(e.target.value);
+            }}
+          >
+            {getOptions()}
+          </select>
+        </label>
+        <label>
+          YAxis
+          <select
+            value={yAxis}
+            onChange={(e) => {
+              setYAxis(e.target.value);
+            }}
+          >
+            {getOptions()}
+          </select>
         </label>
       </form>
       <div className={"my-pretty-chart-container"}>
