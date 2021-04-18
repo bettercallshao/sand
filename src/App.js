@@ -19,7 +19,7 @@ function App() {
     {}
   );
 
-  const ioFromDiagram = (schema) => {
+  const ioFromDiagram = (schema, varValue) => {
     const linkMap = schema.links.reduce(
       (dict, l) => ({ ...dict, [l.input]: l.output }),
       {}
@@ -28,15 +28,19 @@ function App() {
       (a1, n) => [
         ...a1,
         ...n.outputs.reduce(
-          (a2, o) => [...a2, { Id: o.id, Type: o.data.type, value: 0 }],
+          (a2, o) => [
+            ...a2,
+            { Id: o.id, Type: o.data.type, value: varValue[o.id] || 0 },
+          ],
           []
         ),
         ...n.inputs.reduce((a2, i) => {
           if (!linkMap[i.id]) {
+            const id = config.Separator + i.id;
             a2.push({
-              Id: config.Separator + i.id,
+              Id: id,
               Type: i.data.type,
-              value: 0,
+              value: varValue[id] || 0,
             });
           }
           return a2;
@@ -139,9 +143,17 @@ function App() {
     };
 
     const [io, setIo] = useState({});
+    const [varValue, setVarValue] = useState({});
     useEffect(() => {
-      setIo(ioFromDiagram(schema));
-    }, [schema]);
+      setIo(ioFromDiagram(schema, varValue));
+    }, [schema, varValue]);
+
+    const handleVariable = (event) => {
+      setVarValue({
+        ...varValue,
+        [event.target.name]: parseFloat(event.target.value),
+      });
+    };
 
     return (
       <div>
@@ -159,6 +171,24 @@ function App() {
             </select>
           </label>
           <input type="submit" value="Create" />
+        </form>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+          }}
+        >
+          {(io.Variable || []).map((v) => (
+            <label>
+              {v.Id}
+              <input
+                type="number"
+                step="0.01"
+                name={v.Id}
+                value={varValue[v.Id]}
+                onChange={handleVariable}
+              />
+            </label>
+          ))}
         </form>
         <div style={{ width: "60rem", height: "30rem" }}>
           <Diagram schema={schema} onChange={onChange} />
