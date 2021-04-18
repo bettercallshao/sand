@@ -6,276 +6,256 @@ import "beautiful-react-diagrams/styles.css";
 import Diagram, { createSchema, useSchema } from "beautiful-react-diagrams";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
+import { useWhatChanged } from "@simbathesailor/use-what-changed";
 
-function App() {
-  const config = {
-    StepCount: 2000,
-    StepSize: 0.01,
-    Separator: ":",
-  };
+const config = {
+  StepCount: 20,
+  StepSize: 0.01,
+  Separator: ":",
+};
 
-  const boxType = sandio.builtinBoxType.reduce(
-    (res, bt) => ({ ...res, [bt.Id]: bt }),
+const ioFromDiagram = (schema, varValue) => {
+  const linkMap = schema.links.reduce(
+    (dict, l) => ({ ...dict, [l.input]: l.output }),
     {}
   );
+  const variable = schema.nodes.reduce(
+    (a1, n) => [
+      ...a1,
+      ...n.outputs.reduce(
+        (a2, o) => [
+          ...a2,
+          { Id: o.id, Type: o.data.type, value: varValue[o.id] || 0 },
+        ],
+        []
+      ),
+      ...n.inputs.reduce((a2, i) => {
+        if (!linkMap[i.id]) {
+          const id = config.Separator + i.id;
+          a2.push({
+            Id: id,
+            Type: i.data.type,
+            Value: varValue[id] || 0,
+          });
+        }
+        return a2;
+      }, []),
+    ],
+    []
+  );
+  const box = schema.nodes.reduce(
+    (arr, n) => [
+      ...arr,
+      {
+        Id: n.id,
+        Type: n.data.type,
+        Input: n.inputs.map((i) => ({
+          Id: i.content,
+          Source: linkMap[i.id] || config.Separator + i.id,
+        })),
+      },
+    ],
+    []
+  );
+  return {
+    Version: "v1",
+    Config: config,
+    Box: box,
+    Variable: variable,
+  };
+};
 
-  const ioFromDiagram = (schema, varValue) => {
-    const linkMap = schema.links.reduce(
-      (dict, l) => ({ ...dict, [l.input]: l.output }),
-      {}
-    );
-    const variable = schema.nodes.reduce(
-      (a1, n) => [
-        ...a1,
-        ...n.outputs.reduce(
-          (a2, o) => [
-            ...a2,
-            { Id: o.id, Type: o.data.type, value: varValue[o.id] || 0 },
-          ],
-          []
-        ),
-        ...n.inputs.reduce((a2, i) => {
-          if (!linkMap[i.id]) {
-            const id = config.Separator + i.id;
-            a2.push({
-              Id: id,
-              Type: i.data.type,
-              value: varValue[id] || 0,
-            });
-          }
-          return a2;
-        }, []),
-      ],
-      []
-    );
-    const box = schema.nodes.reduce(
-      (arr, n) => [
-        ...arr,
-        {
-          Id: n.id,
-          Type: n.data.type,
-          Input: n.inputs.map((i) => ({
-            Id: i.content,
-            Source: linkMap[i.id] || i.id,
-          })),
-        },
-      ],
-      []
-    );
-    return {
-      Version: "v1",
-      Config: config,
-      Box: box,
-      Variable: variable,
-    };
+const boxType = sandio.builtinBoxType.reduce(
+  (res, bt) => ({ ...res, [bt.Id]: bt }),
+  {}
+);
+
+const UncontrolledDiagram = (props) => {
+  const { setIo } = props;
+  const [localIo, setLocalIo] = useState({});
+
+  const handleRemove = (id) => {
+    console.log("78");
+    removeNode({ id });
   };
 
-  const UncontrolledDiagram = () => {
-    const handleRemove = (id) => {
-      removeNode({ id });
-    };
-
-    // the diagram model
-    const CustomNode = (props) => {
-      const { id, content, inputs, outputs } = props;
-
-      return (
-        <div
-          className="bi bi-diagram-node bi-diagram-node-default"
-          style={{ width: "4rem" }}
-        >
-          {content}
-          <button onClick={() => handleRemove(id)}>x</button>
-          <div className="bi-port-wrapper">
-            <div className="bi-input-ports">
-              {inputs.map((port) =>
-                cloneElement(port, {}, <>{port.props.content}</>)
-              )}
-            </div>
-            <div className="bi-output-ports">
-              {outputs.map((port) =>
-                cloneElement(port, {}, <>{port.props.content}</>)
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    };
-
-    // create diagrams schema
-    const [schema, { onChange, removeNode }] = useSchema(createSchema({}));
-    const options = Object.keys(boxType);
-    const [id, setId] = useState();
-    const [type, setType] = useState(options[0]);
-    const handleCreate = (event) => {
-      const bt = boxType[type];
-      onChange({
-        nodes: [
-          ...schema.nodes,
-          {
-            id,
-            data: { type },
-            content: id,
-            coordinates: [10, 10],
-            render: CustomNode,
-            inputs: bt.Input.map((i) => ({
-              id: id + config.Separator + i.Id,
-              content: i.Id,
-              data: { type: i.Type },
-              alignment: "left",
-            })),
-            outputs: bt.Output.map((i) => ({
-              id: id + config.Separator + i.Id,
-              content: i.Id,
-              data: { type: i.Type },
-              alignment: "right",
-            })),
-          },
-        ],
-      });
-      event.preventDefault();
-    };
-    const handleId = (event) => {
-      setId(event.target.value);
-    };
-    const handleType = (event) => {
-      setType(event.target.value);
-    };
-
-    const [io, setIo] = useState({});
-    const [varValue, setVarValue] = useState({});
-    useEffect(() => {
-      setIo(ioFromDiagram(schema, varValue));
-    }, [schema, varValue]);
-
-    const handleVariable = (event) => {
-      setVarValue({
-        ...varValue,
-        [event.target.name]: parseFloat(event.target.value),
-      });
-    };
+  // the diagram model
+  const CustomNode = (props) => {
+    const { id, content, inputs, outputs } = props;
 
     return (
-      <div>
-        <form onSubmit={handleCreate}>
-          <label>
-            Id
-            <input type="text" name="id" value={id} onChange={handleId} />
-          </label>
-          <label>
-            Type
-            <select value={type} onChange={handleType}>
-              {options.map((value) => (
-                <option value={value}>{value}</option>
-              ))}
-            </select>
-          </label>
-          <input type="submit" value="Create" />
-        </form>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-          }}
-        >
-          {(io.Variable || []).map((v) => (
-            <label>
-              {v.Id}
-              <input
-                type="number"
-                step="0.01"
-                name={v.Id}
-                value={varValue[v.Id]}
-                onChange={handleVariable}
-              />
-            </label>
-          ))}
-        </form>
-        <div style={{ width: "60rem", height: "30rem" }}>
-          <Diagram schema={schema} onChange={onChange} />
+      <div
+        className="bi bi-diagram-node bi-diagram-node-default"
+        style={{ width: "4rem" }}
+      >
+        {content}
+        <button onClick={() => handleRemove(id)}>x</button>
+        <div className="bi-port-wrapper">
+          <div className="bi-input-ports">
+            {inputs.map((port) =>
+              cloneElement(port, {}, <>{port.props.content}</>)
+            )}
+          </div>
+          <div className="bi-output-ports">
+            {outputs.map((port) =>
+              cloneElement(port, {}, <>{port.props.content}</>)
+            )}
+          </div>
         </div>
       </div>
     );
   };
 
-  // keep raw data as list of dict
-  const [raw, setRaw] = useState([]);
-  useEffect(() => {
-    sandio.run(
-      {
-        Version: "v1",
-        Config: {
-          StepCount: 2000,
-          StepSize: 0.01,
-          Separator: ":",
+  // create diagrams schema
+  const [schema, { onChange, removeNode }] = useSchema(createSchema({}));
+  const options = Object.keys(boxType);
+  const [id, setId] = useState("");
+  const [type, setType] = useState(options[0]);
+  const handleCreate = (event) => {
+    console.log("handleCreate");
+    const bt = boxType[type];
+    onChange({
+      nodes: [
+        ...schema.nodes,
+        {
+          id,
+          data: { type },
+          content: type + config.Separator + id,
+          coordinates: [10, 10],
+          render: CustomNode,
+          inputs: bt.Input.map((i) => ({
+            id: id + config.Separator + i.Id,
+            content: i.Id,
+            data: { type: i.Type },
+            alignment: "left",
+          })),
+          outputs: bt.Output.map((i) => ({
+            id: id + config.Separator + i.Id,
+            content: i.Id,
+            data: { type: i.Type },
+            alignment: "right",
+          })),
         },
-        Box: [
-          {
-            Id: "cons0",
-            Type: "sin",
-            Input: [
-              {
-                Id: "period",
-                Source: "param0",
-              },
-              {
-                Id: "shift",
-                Source: "param1",
-              },
-            ],
-          },
-          {
-            Id: "pers0",
-            Type: "integrate",
-            Input: [{ Id: "x", Source: "cons0:x" }],
-          },
-        ],
-        Variable: [
-          {
-            Id: "param0",
-            Type: "float",
-            Value: 10,
-          },
-          {
-            Id: "param1",
-            Type: "float",
-            Value: 2,
-          },
-          {
-            Id: "cons0:x",
-            Type: "float",
-            Value: 0,
-          },
-          {
-            Id: "pers0:sx",
-            Type: "float",
-            Value: 0,
-          },
-        ],
-      },
-      (config, value) => {
+      ],
+    });
+    event.preventDefault();
+  };
+  const handleId = (event) => {
+    console.log("142");
+    setId(event.target.value);
+  };
+  const handleType = (event) => {
+    console.log("146");
+    setType(event.target.value);
+  };
+
+  const [varValue, setVarValue] = useState({});
+  useWhatChanged(
+    [setLocalIo, setIo, schema, varValue],
+    "setLocalIo, setIo, schema, varValue"
+  );
+  useEffect(() => {
+    console.log("149");
+    setLocalIo(ioFromDiagram(schema, varValue));
+  }, [setLocalIo, schema, varValue]);
+  useEffect(() => {
+    console.log("154");
+    setTimeout(() => {
+      setIo(localIo);
+    }, 1000);
+  }, [setIo, localIo]);
+
+  const handleVariable = (event) => {
+    console.log("handleVariable");
+    setVarValue({
+      ...varValue,
+      [event.target.name]: parseFloat(event.target.value),
+    });
+  };
+
+  return (
+    <div>
+      <form onSubmit={handleCreate}>
+        <label>
+          Id
+          <input type="text" name="id" value={id} onChange={handleId} />
+        </label>
+        <label>
+          Type
+          <select value={type} onChange={handleType}>
+            {options.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </label>
+        <input type="submit" value="Create" />
+      </form>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+        }}
+      >
+        {(localIo.Variable || []).map((v) => (
+          <label key={v.Id}>
+            {v.Id}
+            <input
+              type="number"
+              step="0.01"
+              name={v.Id}
+              value={varValue[v.Id] || 0}
+              onChange={handleVariable}
+            />
+          </label>
+        ))}
+      </form>
+      <div style={{ width: "60rem", height: "30rem" }}>
+        <Diagram schema={schema} onChange={onChange} />
+      </div>
+    </div>
+  );
+};
+
+function App() {
+  // keep raw data as list of dict
+  const [io, setIo] = useState({});
+  const [raw, setRaw] = useState([]);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    console.log("asf");
+    try {
+      setRaw([]);
+      sandio.run(io, (config, value) => {
         setRaw((raw) => [...raw, { length: config.Length, ...value }]);
-      }
-    );
-  }, []);
-  const extractXy = (raw, x, y) => [
-    [x, y],
-    ...raw.map((line) => [line[x], line[y]]),
+      });
+      setErr("");
+    } catch (sandErr) {
+      setErr(sandErr);
+    }
+  }, [io]);
+  const [xAxis, setXAsix] = useState("length");
+  const [yAxis, setYAsix] = useState("a:x");
+  const extractXy = () => [
+    [xAxis, yAxis],
+    ...raw.map((line) => [line[xAxis], line[yAxis]]),
   ];
   return (
     <div className="App">
-      <Tabs>
+      {err}
+      <Tabs forceRenderTabPanel={true}>
         <TabList>
           <Tab>Diagram</Tab>
           <Tab>Graph</Tab>
         </TabList>
         <TabPanel>
-          <UncontrolledDiagram />
+          <UncontrolledDiagram setIo={setIo} />
         </TabPanel>
         <TabPanel>
           <div className={"my-pretty-chart-container"}>
             <Chart
               chartType="ScatterChart"
-              data={extractXy(raw, "cons0:x", "pers0:sx")}
+              data={extractXy()}
               width="30rem"
               height="30rem"
               legendToggle
