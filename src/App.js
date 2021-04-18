@@ -8,13 +8,9 @@ import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
 import { useWhatChanged } from "@simbathesailor/use-what-changed";
 
-const config = {
-  StepCount: 20,
-  StepSize: 0.01,
-  Separator: ":",
-};
+const separator = ":";
 
-const ioFromDiagram = (schema, varValue) => {
+const boxFromDiagram = (schema, varValue) => {
   const linkMap = schema.links.reduce(
     (dict, l) => ({ ...dict, [l.input]: l.output }),
     {}
@@ -25,13 +21,13 @@ const ioFromDiagram = (schema, varValue) => {
       ...n.outputs.reduce(
         (a2, o) => [
           ...a2,
-          { Id: o.id, Type: o.data.type, value: varValue[o.id] || 0 },
+          { Id: o.id, Type: o.data.type, Value: varValue[o.id] || 0 },
         ],
         []
       ),
       ...n.inputs.reduce((a2, i) => {
         if (!linkMap[i.id]) {
-          const id = config.Separator + i.id;
+          const id = separator + i.id;
           a2.push({
             Id: id,
             Type: i.data.type,
@@ -51,7 +47,7 @@ const ioFromDiagram = (schema, varValue) => {
         Type: n.data.type,
         Input: n.inputs.map((i) => ({
           Id: i.content,
-          Source: linkMap[i.id] || config.Separator + i.id,
+          Source: linkMap[i.id] || separator + i.id,
         })),
       },
     ],
@@ -59,7 +55,6 @@ const ioFromDiagram = (schema, varValue) => {
   );
   return {
     Version: "v1",
-    Config: config,
     Box: box,
     Variable: variable,
   };
@@ -70,7 +65,7 @@ const boxType = sandio.builtinBoxType.reduce(
   {}
 );
 
-const UncontrolledDiagram = (props) => {
+const DiagramPage = (props) => {
   const { setIo } = props;
   const [localIo, setLocalIo] = useState({});
 
@@ -120,17 +115,17 @@ const UncontrolledDiagram = (props) => {
         {
           id,
           data: { type },
-          content: type + config.Separator + id,
+          content: type + separator + id,
           coordinates: [10, 10],
           render: CustomNode,
           inputs: bt.Input.map((i) => ({
-            id: id + config.Separator + i.Id,
+            id: id + separator + i.Id,
             content: i.Id,
             data: { type: i.Type },
             alignment: "left",
           })),
           outputs: bt.Output.map((i) => ({
-            id: id + config.Separator + i.Id,
+            id: id + separator + i.Id,
             content: i.Id,
             data: { type: i.Type },
             alignment: "right",
@@ -156,7 +151,7 @@ const UncontrolledDiagram = (props) => {
   );
   useEffect(() => {
     console.log("149");
-    setLocalIo(ioFromDiagram(schema, varValue));
+    setLocalIo(boxFromDiagram(schema, varValue));
   }, [setLocalIo, schema, varValue]);
   useEffect(() => {
     console.log("154");
@@ -217,29 +212,85 @@ const UncontrolledDiagram = (props) => {
   );
 };
 
-function App() {
-  // keep raw data as list of dict
-  const [io, setIo] = useState({});
+const GraphPage = (props) => {
+  const { io, setErr } = props;
   const [raw, setRaw] = useState([]);
-  const [err, setErr] = useState("");
-  useEffect(() => {
-    console.log("asf");
-    try {
-      setRaw([]);
-      sandio.run(io, (config, value) => {
-        setRaw((raw) => [...raw, { length: config.Length, ...value }]);
-      });
-      setErr("");
-    } catch (sandErr) {
-      setErr(sandErr);
-    }
-  }, [io]);
   const [xAxis, setXAsix] = useState("length");
   const [yAxis, setYAsix] = useState("a:x");
+  const [stepCount, setStepCount] = useState(50);
+  const [stepSize, setStepSize] = useState(0.01);
   const extractXy = () => [
     [xAxis, yAxis],
     ...raw.map((line) => [line[xAxis], line[yAxis]]),
   ];
+  useEffect(() => {
+    try {
+      setRaw([]);
+      sandio.run(
+        {
+          ...io,
+          Config: {
+            Separator: separator,
+            StepCount: stepCount,
+            StepSize: stepSize,
+          },
+        },
+        (config, value) => {
+          setRaw((raw) => [...raw, { length: config.Length, ...value }]);
+        }
+      );
+      setErr("");
+    } catch (sandErr) {
+      setErr(sandErr);
+    }
+  }, [io, setErr, stepCount, stepSize]);
+  return (
+    <div>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+        }}
+      >
+        <label key="stepCount">
+          StepCount
+          <input
+            type="number"
+            step="1"
+            value={stepCount}
+            onChange={(e) => {
+              setStepCount(parseInt(e.target.value));
+            }}
+          />
+        </label>
+        <label key="stepSize">
+          StepCount
+          <input
+            type="number"
+            step="0.01"
+            value={stepSize}
+            onChange={(e) => {
+              setStepSize(parseFloat(e.target.value));
+            }}
+          />
+        </label>
+      </form>
+      <div className={"my-pretty-chart-container"}>
+        <Chart
+          chartType="ScatterChart"
+          data={extractXy()}
+          width="30rem"
+          height="30rem"
+          legendToggle
+        />
+      </div>
+    </div>
+  );
+};
+
+function App() {
+  // keep raw data as list of dict
+  const [io, setIo] = useState({});
+  const [err, setErr] = useState("");
   return (
     <div className="App">
       {err}
@@ -249,18 +300,10 @@ function App() {
           <Tab>Graph</Tab>
         </TabList>
         <TabPanel>
-          <UncontrolledDiagram setIo={setIo} />
+          <DiagramPage setIo={setIo} />
         </TabPanel>
         <TabPanel>
-          <div className={"my-pretty-chart-container"}>
-            <Chart
-              chartType="ScatterChart"
-              data={extractXy()}
-              width="30rem"
-              height="30rem"
-              legendToggle
-            />
-          </div>
+          <GraphPage io={io} setErr={setErr} />
         </TabPanel>
       </Tabs>
     </div>
