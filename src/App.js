@@ -102,7 +102,65 @@ const DiagramPage = (props) => {
   };
 
   // create diagrams schema
-  const [schema, { onChange, removeNode }] = useSchema(createSchema({}));
+  const [schema, { onChange, removeNode }] = useSchema(
+    createSchema({
+      nodes: [
+        {
+          id: "a",
+          data: { type: "sin" },
+          content: "sin:a",
+          coordinates: [166, 60],
+          render: CustomNode,
+          inputs: [
+            {
+              id: "a:period",
+              content: "period",
+              data: { type: "float" },
+              alignment: "left",
+            },
+            {
+              id: "a:shift",
+              content: "shift",
+              data: { type: "float" },
+              alignment: "left",
+            },
+          ],
+          outputs: [
+            {
+              id: "a:x",
+              content: "x",
+              data: { type: "float" },
+              alignment: "right",
+            },
+          ],
+        },
+        {
+          id: "b",
+          data: { type: "integrate" },
+          content: "integrate:b",
+          coordinates: [469, 44],
+          render: CustomNode,
+          inputs: [
+            {
+              id: "b:x",
+              content: "x",
+              data: { type: "float" },
+              alignment: "left",
+            },
+          ],
+          outputs: [
+            {
+              id: "b:sx",
+              content: "sx",
+              data: { type: "float" },
+              alignment: "right",
+            },
+          ],
+        },
+      ],
+      links: [{ input: "b:x", output: "a:x" }],
+    })
+  );
   const options = Object.keys(boxType);
   const [id, setId] = useState("");
   const [type, setType] = useState(options[0]);
@@ -144,7 +202,7 @@ const DiagramPage = (props) => {
     setType(event.target.value);
   };
 
-  const [varValue, setVarValue] = useState({});
+  const [varValue, setVarValue] = useState({ ":a:period": 1 });
   useWhatChanged(
     [setLocalIo, setIo, schema, varValue],
     "setLocalIo, setIo, schema, varValue"
