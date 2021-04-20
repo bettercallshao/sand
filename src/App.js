@@ -81,7 +81,7 @@ const DiagramPage = (props) => {
     return (
       <div
         className="bi bi-diagram-node bi-diagram-node-default"
-        style={{ width: "4rem" }}
+        style={{ width: "4rem", opacity: 0.6 }}
       >
         {content}
         <button onClick={() => handleRemove(id)}>x</button>
@@ -106,28 +106,22 @@ const DiagramPage = (props) => {
     createSchema({
       nodes: [
         {
-          id: "a",
-          data: { type: "sin" },
-          content: "sin:a",
+          id: "step",
+          data: { type: "step" },
+          content: "step:step",
           coordinates: [166, 60],
           render: CustomNode,
           inputs: [
             {
-              id: "a:period",
-              content: "period",
-              data: { type: "float" },
-              alignment: "left",
-            },
-            {
-              id: "a:shift",
-              content: "shift",
+              id: "step:length",
+              content: "length",
               data: { type: "float" },
               alignment: "left",
             },
           ],
           outputs: [
             {
-              id: "a:x",
+              id: "step:x",
               content: "x",
               data: { type: "float" },
               alignment: "right",
@@ -135,14 +129,14 @@ const DiagramPage = (props) => {
           ],
         },
         {
-          id: "b",
+          id: "inte",
           data: { type: "integrate" },
-          content: "integrate:b",
-          coordinates: [469, 44],
+          content: "integrate:inte",
+          coordinates: [640, 7],
           render: CustomNode,
           inputs: [
             {
-              id: "b:x",
+              id: "inte:x",
               content: "x",
               data: { type: "float" },
               alignment: "left",
@@ -150,7 +144,117 @@ const DiagramPage = (props) => {
           ],
           outputs: [
             {
-              id: "b:sx",
+              id: "inte:sx",
+              content: "sx",
+              data: { type: "float" },
+              alignment: "right",
+            },
+          ],
+        },
+        {
+          id: "subt",
+          data: { type: "subtract" },
+          content: "subtract:subt",
+          coordinates: [335, 27],
+          render: CustomNode,
+          inputs: [
+            {
+              id: "subt:a",
+              content: "a",
+              data: { type: "float" },
+              alignment: "left",
+            },
+            {
+              id: "subt:b",
+              content: "b",
+              data: { type: "float" },
+              alignment: "left",
+            },
+          ],
+          outputs: [
+            {
+              id: "subt:x",
+              content: "x",
+              data: { type: "float" },
+              alignment: "right",
+            },
+          ],
+        },
+        {
+          id: "subt2",
+          data: { type: "subtract" },
+          content: "subtract:subt2",
+          coordinates: [481, 16],
+          render: CustomNode,
+          inputs: [
+            {
+              id: "subt2:a",
+              content: "a",
+              data: { type: "float" },
+              alignment: "left",
+            },
+            {
+              id: "subt2:b",
+              content: "b",
+              data: { type: "float" },
+              alignment: "left",
+            },
+          ],
+          outputs: [
+            {
+              id: "subt2:x",
+              content: "x",
+              data: { type: "float" },
+              alignment: "right",
+            },
+          ],
+        },
+        {
+          id: "mult",
+          data: { type: "multiply" },
+          content: "multiply:mult",
+          coordinates: [324, 164],
+          render: CustomNode,
+          inputs: [
+            {
+              id: "mult:a",
+              content: "a",
+              data: { type: "float" },
+              alignment: "left",
+            },
+            {
+              id: "mult:b",
+              content: "b",
+              data: { type: "float" },
+              alignment: "left",
+            },
+          ],
+          outputs: [
+            {
+              id: "mult:x",
+              content: "x",
+              data: { type: "float" },
+              alignment: "right",
+            },
+          ],
+        },
+        {
+          id: "inte2",
+          data: { type: "integrate" },
+          content: "integrate:inte2",
+          coordinates: [760, 76],
+          render: CustomNode,
+          inputs: [
+            {
+              id: "inte2:x",
+              content: "x",
+              data: { type: "float" },
+              alignment: "left",
+            },
+          ],
+          outputs: [
+            {
+              id: "inte2:sx",
               content: "sx",
               data: { type: "float" },
               alignment: "right",
@@ -158,7 +262,15 @@ const DiagramPage = (props) => {
           ],
         },
       ],
-      links: [{ input: "b:x", output: "a:x" }],
+      links: [
+        { input: "subt:a", output: "step:x" },
+        { input: "subt2:a", output: "subt:x" },
+        { input: "inte:x", output: "subt2:x" },
+        { input: "subt2:b", output: "mult:x" },
+        { input: "subt:b", output: "inte:sx" },
+        { input: "inte2:x", output: "inte:sx" },
+        { input: "mult:a", output: "inte2:sx" },
+      ],
     })
   );
   const options = Object.keys(boxType);
@@ -202,7 +314,10 @@ const DiagramPage = (props) => {
     setType(event.target.value);
   };
 
-  const [varValue, setVarValue] = useState({ ":a:period": 1 });
+  const [varValue, setVarValue] = useState({
+    ":step:length": 1,
+    ":mult:b": 2.3,
+  });
   useWhatChanged(
     [setLocalIo, setIo, schema, varValue],
     "setLocalIo, setIo, schema, varValue"
@@ -275,8 +390,8 @@ const GraphPage = (props) => {
   const [raw, setRaw] = useState([]);
   const [xAxis, setXAxis] = useState("length");
   const [yAxis, setYAxis] = useState("length");
-  const [stepCount, setStepCount] = useState(50);
-  const [stepSize, setStepSize] = useState(0.01);
+  const [stepCount, setStepCount] = useState(100);
+  const [stepSize, setStepSize] = useState(0.1);
   const extractXy = () => [
     [xAxis, yAxis],
     ...raw.map((line) => [line[xAxis], line[yAxis]]),
@@ -306,7 +421,7 @@ const GraphPage = (props) => {
       );
       setErr("");
     } catch (sandErr) {
-      setErr(sandErr);
+      setErr(sandErr.message);
     }
   }, [io, setErr, stepCount, stepSize]);
   return (

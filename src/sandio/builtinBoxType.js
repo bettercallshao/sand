@@ -22,6 +22,48 @@ const builtinBoxType = [
     Function: "output.x = input.a * input.b",
   },
   {
+    Id: "add",
+    Type: "constant",
+    Input: [
+      {
+        Id: "a",
+        Type: "float",
+      },
+      {
+        Id: "b",
+        Type: "float",
+      },
+    ],
+    Output: [
+      {
+        Id: "x",
+        Type: "float",
+      },
+    ],
+    Function: "output.x = input.a + input.b",
+  },
+  {
+    Id: "subtract",
+    Type: "constant",
+    Input: [
+      {
+        Id: "a",
+        Type: "float",
+      },
+      {
+        Id: "b",
+        Type: "float",
+      },
+    ],
+    Output: [
+      {
+        Id: "x",
+        Type: "float",
+      },
+    ],
+    Function: "output.x = input.a - input.b",
+  },
+  {
     Id: "sin",
     Type: "constant",
     Input: [
@@ -42,6 +84,23 @@ const builtinBoxType = [
     ],
     Function:
       "output.x = Math.sin((config.Length - input.shift) / input.period * 2 * Math.PI)",
+  },
+  {
+    Id: "step",
+    Type: "constant",
+    Input: [
+      {
+        Id: "length",
+        Type: "float",
+      },
+    ],
+    Output: [
+      {
+        Id: "x",
+        Type: "float",
+      },
+    ],
+    Function: "output.x = config.Length > input.length ? 1 : 0",
   },
   {
     Id: "integrate",

@@ -41,19 +41,20 @@ function isSameType(a, b) {
 
 // executes a system object and returns variable states
 function run(system, cb) {
-  const config = { ...system.Config };
+  const sys = JSON.parse(JSON.stringify(system));
+  const config = { ...sys.Config };
   // put BoxType in a map for lookup with builtin box type
-  const boxType = { ...mapify(system.BoxType), ...mapify(builtinBoxType) };
+  const boxType = { ...mapify(sys.BoxType), ...mapify(builtinBoxType) };
   // put Variable in a map for lookup
-  const variable = mapify(system.Variable);
+  const variable = mapify(sys.Variable);
   // validate
-  if (!system.Config) {
+  if (!sys.Config) {
     throw Error(`Config field is missing.`);
   }
-  if (!system.Box) {
+  if (!sys.Box) {
     throw Error(`Box field is missing.`);
   }
-  system.Box.forEach(function (b) {
+  sys.Box.forEach(function (b) {
     if (!t(b)) {
       throw Error(`Type of box ${b.Id} type ${b.Type} is missing.`);
     }
@@ -94,8 +95,8 @@ function run(system, cb) {
   });
   // treat constant box from persistent box differently
   const isConstBox = (b) => boxType[b.Type].Type === "constant";
-  const consBox = system.Box.filter(isConstBox);
-  const persBox = system.Box.filter((b) => !isConstBox(b));
+  const consBox = sys.Box.filter(isConstBox);
+  const persBox = sys.Box.filter((b) => !isConstBox(b));
   // initialize iteration
   forEachValue(variable, function (v) {
     v.Iteration = 0;
