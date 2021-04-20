@@ -1,7 +1,7 @@
 import "./App.css";
 import { useState, useEffect, cloneElement } from "react";
 import { Chart } from "react-google-charts";
-import sandio from "sandio";
+import sandio from "./sandio";
 import "beautiful-react-diagrams/styles.css";
 import Diagram, { createSchema, useSchema } from "beautiful-react-diagrams";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
