@@ -6,7 +6,6 @@ import "beautiful-react-diagrams/styles.css";
 import Diagram, { createSchema, useSchema } from "beautiful-react-diagrams";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
-import { useWhatChanged } from "@simbathesailor/use-what-changed";
 
 const separator = ":";
 
@@ -70,7 +69,6 @@ const DiagramPage = (props) => {
   const [localIo, setLocalIo] = useState({});
 
   const handleRemove = (id) => {
-    console.log("78");
     removeNode({ id });
   };
 
@@ -277,7 +275,6 @@ const DiagramPage = (props) => {
   const [id, setId] = useState("");
   const [type, setType] = useState(options[0]);
   const handleCreate = (event) => {
-    console.log("handleCreate");
     const bt = boxType[type];
     onChange({
       nodes: [
@@ -306,11 +303,9 @@ const DiagramPage = (props) => {
     event.preventDefault();
   };
   const handleId = (event) => {
-    console.log("142");
     setId(event.target.value);
   };
   const handleType = (event) => {
-    console.log("146");
     setType(event.target.value);
   };
 
@@ -318,23 +313,16 @@ const DiagramPage = (props) => {
     ":step:length": 1,
     ":mult:b": 2.3,
   });
-  useWhatChanged(
-    [setLocalIo, setIo, schema, varValue],
-    "setLocalIo, setIo, schema, varValue"
-  );
   useEffect(() => {
-    console.log("149");
     setLocalIo(boxFromDiagram(schema, varValue));
   }, [setLocalIo, schema, varValue]);
   useEffect(() => {
-    console.log("154");
     setTimeout(() => {
       setIo(localIo);
     }, 1000);
   }, [setIo, localIo]);
 
   const handleVariable = (event) => {
-    console.log("handleVariable");
     setVarValue({
       ...varValue,
       [event.target.name]: parseFloat(event.target.value),
