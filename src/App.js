@@ -4,17 +4,16 @@ import { Chart } from "react-google-charts";
 import sandio from "./sandio";
 import "beautiful-react-diagrams/styles.css";
 import Diagram, { createSchema, useSchema } from "beautiful-react-diagrams";
-import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
+import SplitterLayout from "react-splitter-layout";
+import "react-splitter-layout/lib/index.css";
 
-const separator = ":";
-
-const boxFromDiagram = (schema, varValue) => {
-  const linkMap = schema.links.reduce(
+const boxFromDiagram = (schema, varValue, config) => {
+  const linkMap = (schema.links || []).reduce(
     (dict, l) => ({ ...dict, [l.input]: l.output }),
     {}
   );
-  const variable = schema.nodes.reduce(
+  const variable = (schema.nodes || []).reduce(
     (a1, n) => [
       ...a1,
       ...n.outputs.reduce(
@@ -26,7 +25,7 @@ const boxFromDiagram = (schema, varValue) => {
       ),
       ...n.inputs.reduce((a2, i) => {
         if (!linkMap[i.id]) {
-          const id = separator + i.id;
+          const id = config.Separator + i.id;
           a2.push({
             Id: id,
             Type: i.data.type,
@@ -38,7 +37,7 @@ const boxFromDiagram = (schema, varValue) => {
     ],
     []
   );
-  const box = schema.nodes.reduce(
+  const box = (schema.nodes || []).reduce(
     (arr, n) => [
       ...arr,
       {
@@ -46,7 +45,7 @@ const boxFromDiagram = (schema, varValue) => {
         Type: n.data.type,
         Input: n.inputs.map((i) => ({
           Id: i.content,
-          Source: linkMap[i.id] || separator + i.id,
+          Source: linkMap[i.id] || config.Separator + i.id,
         })),
       },
     ],
@@ -56,6 +55,7 @@ const boxFromDiagram = (schema, varValue) => {
     Version: "v1",
     Box: box,
     Variable: variable,
+    Config: { ...config },
   };
 };
 
@@ -65,8 +65,7 @@ const boxType = sandio.builtinBoxType.reduce(
 );
 
 const DiagramPage = (props) => {
-  const { setIo } = props;
-  const [localIo, setLocalIo] = useState({});
+  const { setSchema, separator } = props;
 
   const handleRemove = (id) => {
     removeNode({ id });
@@ -309,25 +308,9 @@ const DiagramPage = (props) => {
     setType(event.target.value);
   };
 
-  const [varValue, setVarValue] = useState({
-    ":step:length": 1,
-    ":mult:b": 2.3,
-  });
   useEffect(() => {
-    setLocalIo(boxFromDiagram(schema, varValue));
-  }, [setLocalIo, schema, varValue]);
-  useEffect(() => {
-    setTimeout(() => {
-      setIo(localIo);
-    }, 1000);
-  }, [setIo, localIo]);
-
-  const handleVariable = (event) => {
-    setVarValue({
-      ...varValue,
-      [event.target.name]: parseFloat(event.target.value),
-    });
-  };
+    setSchema(schema);
+  }, [setSchema, schema]);
 
   return (
     <div>
@@ -348,24 +331,6 @@ const DiagramPage = (props) => {
         </label>
         <input type="submit" value="Create" />
       </form>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-        }}
-      >
-        {(localIo.Variable || []).map((v) => (
-          <label key={v.Id}>
-            {v.Id}
-            <input
-              type="number"
-              step="0.01"
-              name={v.Id}
-              value={varValue[v.Id] || 0}
-              onChange={handleVariable}
-            />
-          </label>
-        ))}
-      </form>
       <div style={{ width: "60rem", height: "30rem" }}>
         <Diagram schema={schema} onChange={onChange} />
       </div>
@@ -378,8 +343,6 @@ const GraphPage = (props) => {
   const [raw, setRaw] = useState([]);
   const [xAxis, setXAxis] = useState("length");
   const [yAxis, setYAxis] = useState("length");
-  const [stepCount, setStepCount] = useState(100);
-  const [stepSize, setStepSize] = useState(0.1);
   const extractXy = () => [
     [xAxis, yAxis],
     ...raw.map((line) => [line[xAxis], line[yAxis]]),
@@ -394,24 +357,14 @@ const GraphPage = (props) => {
   useEffect(() => {
     try {
       setRaw([]);
-      sandio.run(
-        {
-          ...io,
-          Config: {
-            Separator: separator,
-            StepCount: stepCount,
-            StepSize: stepSize,
-          },
-        },
-        (config, value) => {
-          setRaw((raw) => [...raw, { length: config.Length, ...value }]);
-        }
-      );
+      sandio.run(io, (config, value) => {
+        setRaw((raw) => [...raw, { length: config.Length, ...value }]);
+      });
       setErr("");
     } catch (sandErr) {
       setErr(sandErr.message);
     }
-  }, [io, setErr, stepCount, stepSize]);
+  }, [io, setErr]);
   return (
     <div>
       <form
@@ -419,28 +372,6 @@ const GraphPage = (props) => {
           event.preventDefault();
         }}
       >
-        <label key="stepCount">
-          StepCount
-          <input
-            type="number"
-            step="1"
-            value={stepCount}
-            onChange={(e) => {
-              setStepCount(parseInt(e.target.value));
-            }}
-          />
-        </label>
-        <label key="stepSize">
-          StepCount
-          <input
-            type="number"
-            step="0.01"
-            value={stepSize}
-            onChange={(e) => {
-              setStepSize(parseFloat(e.target.value));
-            }}
-          />
-        </label>
         <label>
           XAxis
           <select
@@ -477,25 +408,96 @@ const GraphPage = (props) => {
   );
 };
 
+const ParamPage = (props) => {
+  const { schema, setIo, separator } = props;
+  const [localIo, setLocalIo] = useState({});
+  const [varValue, setVarValue] = useState({
+    ":step:length": 1,
+    ":mult:b": 2.3,
+  });
+  const [stepCount, setStepCount] = useState(100);
+  const [stepSize, setStepSize] = useState(0.1);
+  const handleVariable = (event) => {
+    setVarValue({
+      ...varValue,
+      [event.target.name]: parseFloat(event.target.value),
+    });
+  };
+  useEffect(() => {
+    setLocalIo(
+      boxFromDiagram(schema, varValue, {
+        Separator: separator,
+        StepCount: stepCount,
+        StepSize: stepSize,
+      })
+    );
+  }, [setLocalIo, schema, varValue, stepCount, stepSize, separator]);
+  useEffect(() => {
+    setIo(localIo);
+  }, [setIo, localIo]);
+  return (
+    <div>
+      Param
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+        }}
+      >
+        <label key="stepCount">
+          StepCount
+          <input
+            type="number"
+            step="1"
+            value={stepCount}
+            onChange={(e) => {
+              setStepCount(parseInt(e.target.value));
+            }}
+          />
+        </label>
+        <label key="stepSize">
+          StepCount
+          <input
+            type="number"
+            step="0.01"
+            value={stepSize}
+            onChange={(e) => {
+              setStepSize(parseFloat(e.target.value));
+            }}
+          />
+        </label>
+        {(localIo.Variable || []).map((v) => (
+          <label key={v.Id}>
+            {v.Id}
+            <input
+              type="number"
+              step="0.01"
+              name={v.Id}
+              value={varValue[v.Id] || 0}
+              onChange={handleVariable}
+            />
+          </label>
+        ))}
+      </form>
+    </div>
+  );
+};
+
 function App() {
   // keep raw data as list of dict
+  const separator = ":";
   const [io, setIo] = useState({});
   const [err, setErr] = useState("");
+  const [schema, setSchema] = useState({});
   return (
     <div className="App">
       {err}
-      <Tabs forceRenderTabPanel={true}>
-        <TabList>
-          <Tab>Diagram</Tab>
-          <Tab>Graph</Tab>
-        </TabList>
-        <TabPanel>
-          <DiagramPage setIo={setIo} />
-        </TabPanel>
-        <TabPanel>
+      <SplitterLayout>
+        <DiagramPage setSchema={setSchema} separator={separator} />
+        <SplitterLayout vertical>
+          <ParamPage schema={schema} setIo={setIo} separator={separator} />
           <GraphPage io={io} setErr={setErr} />
-        </TabPanel>
-      </Tabs>
+        </SplitterLayout>
+      </SplitterLayout>
     </div>
   );
 }
