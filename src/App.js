@@ -106,7 +106,7 @@ const DiagramPage = (props) => {
           id: "step",
           data: { type: "step" },
           content: "step:step",
-          coordinates: [166, 60],
+          coordinates: [66, 60],
           render: CustomNode,
           inputs: [
             {
@@ -129,7 +129,7 @@ const DiagramPage = (props) => {
           id: "inte",
           data: { type: "integrate" },
           content: "integrate:inte",
-          coordinates: [640, 7],
+          coordinates: [540, 7],
           render: CustomNode,
           inputs: [
             {
@@ -152,7 +152,7 @@ const DiagramPage = (props) => {
           id: "subt",
           data: { type: "subtract" },
           content: "subtract:subt",
-          coordinates: [335, 27],
+          coordinates: [235, 27],
           render: CustomNode,
           inputs: [
             {
@@ -181,7 +181,7 @@ const DiagramPage = (props) => {
           id: "subt2",
           data: { type: "subtract" },
           content: "subtract:subt2",
-          coordinates: [481, 16],
+          coordinates: [381, 16],
           render: CustomNode,
           inputs: [
             {
@@ -210,7 +210,7 @@ const DiagramPage = (props) => {
           id: "mult",
           data: { type: "multiply" },
           content: "multiply:mult",
-          coordinates: [324, 164],
+          coordinates: [224, 164],
           render: CustomNode,
           inputs: [
             {
@@ -239,7 +239,7 @@ const DiagramPage = (props) => {
           id: "inte2",
           data: { type: "integrate" },
           content: "integrate:inte2",
-          coordinates: [760, 76],
+          coordinates: [600, 126],
           render: CustomNode,
           inputs: [
             {
@@ -316,10 +316,6 @@ const DiagramPage = (props) => {
     <div>
       <form onSubmit={handleCreate}>
         <label>
-          Id
-          <input type="text" name="id" value={id} onChange={handleId} />
-        </label>
-        <label>
           Type
           <select value={type} onChange={handleType}>
             {options.map((value) => (
@@ -329,31 +325,44 @@ const DiagramPage = (props) => {
             ))}
           </select>
         </label>
+        <label>
+          Id
+          <input type="text" name="id" value={id} onChange={handleId} />
+        </label>
         <input type="submit" value="Create" />
       </form>
-      <div style={{ width: "60rem", height: "30rem" }}>
+      <div style={{ width: "100rem", height: "100rem" }}>
         <Diagram schema={schema} onChange={onChange} />
       </div>
     </div>
   );
 };
 
-const GraphPage = (props) => {
-  const { io, setErr } = props;
-  const [raw, setRaw] = useState([]);
-  const [xAxis, setXAxis] = useState("length");
-  const [yAxis, setYAxis] = useState("length");
-  const extractXy = () => [
-    [xAxis, yAxis],
-    ...raw.map((line) => [line[xAxis], line[yAxis]]),
-  ];
-  const getOptions = () => {
-    return [{ Id: "length" }, ...(io.Variable || [])].map((v) => (
-      <option key={v.Id} value={v.Id}>
-        {v.Id}
-      </option>
-    ));
+const IoPage = (props) => {
+  const { schema, separator, setRaw } = props;
+  const [err, setErr] = useState("");
+  const [io, setIo] = useState({});
+  const [varValue, setVarValue] = useState({
+    ":step:length": 1,
+    ":mult:b": 2.3,
+  });
+  const [stepCount, setStepCount] = useState(100);
+  const [stepSize, setStepSize] = useState(0.1);
+  const handleVariable = (event) => {
+    setVarValue({
+      ...varValue,
+      [event.target.name]: parseFloat(event.target.value),
+    });
   };
+  useEffect(() => {
+    setIo(
+      boxFromDiagram(schema, varValue, {
+        Separator: separator,
+        StepCount: stepCount,
+        StepSize: stepSize,
+      })
+    );
+  }, [setIo, schema, varValue, stepCount, stepSize, separator]);
   useEffect(() => {
     try {
       setRaw([]);
@@ -364,7 +373,79 @@ const GraphPage = (props) => {
     } catch (sandErr) {
       setErr(sandErr.message);
     }
-  }, [io, setErr]);
+  }, [io, setErr, setRaw]);
+  return (
+    <div style={{ textAlign: "right" }}>
+      {err}
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+        }}
+      >
+        <label key="stepCount">
+          stepCount
+          <input
+            type="number"
+            step="1"
+            value={stepCount}
+            onChange={(e) => {
+              setStepCount(parseInt(e.target.value));
+            }}
+          />
+          <br />
+        </label>
+        <label key="stepSize">
+          stepSize
+          <input
+            type="number"
+            step="0.01"
+            value={stepSize}
+            onChange={(e) => {
+              setStepSize(parseFloat(e.target.value));
+            }}
+          />
+          <br />
+        </label>
+        {(io.Variable || [])
+          .sort((a, b) => (a.Id > b.Id ? 1 : -1))
+          .map((v) => (
+            <label key={v.Id}>
+              {v.Id}
+              <input
+                type="number"
+                step="0.1"
+                name={v.Id}
+                value={varValue[v.Id] || 0}
+                onChange={handleVariable}
+              />
+              <br />
+            </label>
+          ))}
+      </form>
+    </div>
+  );
+};
+
+const GraphPage = (props) => {
+  const { raw, separator } = props;
+  const [xAxis, setXAxis] = useState("length");
+  const [yAxis, setYAxis] = useState("length");
+  const extractXy = () => [
+    [xAxis, yAxis],
+    ...raw.map((line) => [line[xAxis], line[yAxis]]),
+  ];
+  const getOptions = () => {
+    return (raw.length
+      ? Object.keys(raw[0])
+          .filter((k) => !k.startsWith(separator))
+          .sort()
+      : []
+    ).map((k) => (
+      <option key={k} value={k}>
+        {k}
+      </option>
+    ));
+  };
   return (
     <div>
       <form
@@ -395,89 +476,21 @@ const GraphPage = (props) => {
           </select>
         </label>
       </form>
-      <div className={"my-pretty-chart-container"}>
+      <div
+        className={"my-pretty-chart-container"}
+        style={{ display: "flex", justifyContent: "center" }}
+      >
         <Chart
           chartType="ScatterChart"
           data={extractXy()}
           width="30rem"
           height="30rem"
-          legendToggle
+          options={{
+            chartArea: { width: "90%", height: "90%" },
+            legend: "none",
+          }}
         />
       </div>
-    </div>
-  );
-};
-
-const ParamPage = (props) => {
-  const { schema, setIo, separator } = props;
-  const [localIo, setLocalIo] = useState({});
-  const [varValue, setVarValue] = useState({
-    ":step:length": 1,
-    ":mult:b": 2.3,
-  });
-  const [stepCount, setStepCount] = useState(100);
-  const [stepSize, setStepSize] = useState(0.1);
-  const handleVariable = (event) => {
-    setVarValue({
-      ...varValue,
-      [event.target.name]: parseFloat(event.target.value),
-    });
-  };
-  useEffect(() => {
-    setLocalIo(
-      boxFromDiagram(schema, varValue, {
-        Separator: separator,
-        StepCount: stepCount,
-        StepSize: stepSize,
-      })
-    );
-  }, [setLocalIo, schema, varValue, stepCount, stepSize, separator]);
-  useEffect(() => {
-    setIo(localIo);
-  }, [setIo, localIo]);
-  return (
-    <div>
-      Param
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-        }}
-      >
-        <label key="stepCount">
-          StepCount
-          <input
-            type="number"
-            step="1"
-            value={stepCount}
-            onChange={(e) => {
-              setStepCount(parseInt(e.target.value));
-            }}
-          />
-        </label>
-        <label key="stepSize">
-          StepCount
-          <input
-            type="number"
-            step="0.01"
-            value={stepSize}
-            onChange={(e) => {
-              setStepSize(parseFloat(e.target.value));
-            }}
-          />
-        </label>
-        {(localIo.Variable || []).map((v) => (
-          <label key={v.Id}>
-            {v.Id}
-            <input
-              type="number"
-              step="0.01"
-              name={v.Id}
-              value={varValue[v.Id] || 0}
-              onChange={handleVariable}
-            />
-          </label>
-        ))}
-      </form>
     </div>
   );
 };
@@ -485,17 +498,18 @@ const ParamPage = (props) => {
 function App() {
   // keep raw data as list of dict
   const separator = ":";
-  const [io, setIo] = useState({});
-  const [err, setErr] = useState("");
   const [schema, setSchema] = useState({});
+  const [raw, setRaw] = useState([]);
   return (
     <div className="App">
-      {err}
-      <SplitterLayout>
-        <DiagramPage setSchema={setSchema} separator={separator} />
-        <SplitterLayout vertical>
-          <ParamPage schema={schema} setIo={setIo} separator={separator} />
-          <GraphPage io={io} setErr={setErr} />
+      <SplitterLayout vertical>
+        <SplitterLayout secondaryInitialSize={300}>
+          <DiagramPage setSchema={setSchema} separator={separator} />
+          <IoPage schema={schema} separator={separator} setRaw={setRaw} />
+        </SplitterLayout>
+        <SplitterLayout>
+          <GraphPage raw={raw} separator={separator} />
+          <GraphPage raw={raw} separator={separator} />
         </SplitterLayout>
       </SplitterLayout>
     </div>

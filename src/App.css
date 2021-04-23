@@ -1,3 +1,13 @@
 .App {
   text-align: center;
 }
+
+select {
+  margin-left: 0.1rem;
+  margin-right: 0.1rem;
+}
+
+input {
+  margin-left: 0.1rem;
+  margin-right: 0.1rem;
+}
