@@ -7,6 +7,7 @@ import Diagram, { createSchema, useSchema } from "beautiful-react-diagrams";
 import "react-tabs/style/react-tabs.css";
 import SplitterLayout from "react-splitter-layout";
 import "react-splitter-layout/lib/index.css";
+import useQState from "./useQState";
 
 const boxFromDiagram = (schema, varValue, config) => {
   const linkMap = (schema.links || []).reduce(
@@ -59,19 +60,18 @@ const boxFromDiagram = (schema, varValue, config) => {
   };
 };
 
-const boxType = sandio.builtinBoxType.reduce(
-  (res, bt) => ({ ...res, [bt.Id]: bt }),
-  {}
-);
-
 const DiagramPage = (props) => {
-  const { setSchema, separator } = props;
+  const { initialSchema, setSchema, separator } = props;
+
+  const boxType = sandio.builtinBoxType.reduce(
+    (res, bt) => ({ ...res, [bt.Id]: bt }),
+    {}
+  );
 
   const handleRemove = (id) => {
     removeNode({ id });
   };
 
-  // the diagram model
   const CustomNode = (props) => {
     const { id, content, inputs, outputs } = props;
 
@@ -98,177 +98,187 @@ const DiagramPage = (props) => {
     );
   };
 
+  let validInitialSchema;
+  if (initialSchema.nodes && initialSchema.nodes.length) {
+    initialSchema.nodes.forEach((n) => {
+      n["render"] = CustomNode;
+    });
+    validInitialSchema = initialSchema;
+  }
+
   // create diagrams schema
   const [schema, { onChange, removeNode }] = useSchema(
-    createSchema({
-      nodes: [
-        {
-          id: "step",
-          data: { type: "step" },
-          content: "step:step",
-          coordinates: [66, 60],
-          render: CustomNode,
-          inputs: [
-            {
-              id: "step:length",
-              content: "length",
-              data: { type: "float" },
-              alignment: "left",
-            },
-          ],
-          outputs: [
-            {
-              id: "step:x",
-              content: "x",
-              data: { type: "float" },
-              alignment: "right",
-            },
-          ],
-        },
-        {
-          id: "inte",
-          data: { type: "integrate" },
-          content: "integrate:inte",
-          coordinates: [540, 7],
-          render: CustomNode,
-          inputs: [
-            {
-              id: "inte:x",
-              content: "x",
-              data: { type: "float" },
-              alignment: "left",
-            },
-          ],
-          outputs: [
-            {
-              id: "inte:sx",
-              content: "sx",
-              data: { type: "float" },
-              alignment: "right",
-            },
-          ],
-        },
-        {
-          id: "subt",
-          data: { type: "subtract" },
-          content: "subtract:subt",
-          coordinates: [235, 27],
-          render: CustomNode,
-          inputs: [
-            {
-              id: "subt:a",
-              content: "a",
-              data: { type: "float" },
-              alignment: "left",
-            },
-            {
-              id: "subt:b",
-              content: "b",
-              data: { type: "float" },
-              alignment: "left",
-            },
-          ],
-          outputs: [
-            {
-              id: "subt:x",
-              content: "x",
-              data: { type: "float" },
-              alignment: "right",
-            },
-          ],
-        },
-        {
-          id: "subt2",
-          data: { type: "subtract" },
-          content: "subtract:subt2",
-          coordinates: [381, 16],
-          render: CustomNode,
-          inputs: [
-            {
-              id: "subt2:a",
-              content: "a",
-              data: { type: "float" },
-              alignment: "left",
-            },
-            {
-              id: "subt2:b",
-              content: "b",
-              data: { type: "float" },
-              alignment: "left",
-            },
-          ],
-          outputs: [
-            {
-              id: "subt2:x",
-              content: "x",
-              data: { type: "float" },
-              alignment: "right",
-            },
-          ],
-        },
-        {
-          id: "mult",
-          data: { type: "multiply" },
-          content: "multiply:mult",
-          coordinates: [224, 164],
-          render: CustomNode,
-          inputs: [
-            {
-              id: "mult:a",
-              content: "a",
-              data: { type: "float" },
-              alignment: "left",
-            },
-            {
-              id: "mult:b",
-              content: "b",
-              data: { type: "float" },
-              alignment: "left",
-            },
-          ],
-          outputs: [
-            {
-              id: "mult:x",
-              content: "x",
-              data: { type: "float" },
-              alignment: "right",
-            },
-          ],
-        },
-        {
-          id: "inte2",
-          data: { type: "integrate" },
-          content: "integrate:inte2",
-          coordinates: [600, 126],
-          render: CustomNode,
-          inputs: [
-            {
-              id: "inte2:x",
-              content: "x",
-              data: { type: "float" },
-              alignment: "left",
-            },
-          ],
-          outputs: [
-            {
-              id: "inte2:sx",
-              content: "sx",
-              data: { type: "float" },
-              alignment: "right",
-            },
-          ],
-        },
-      ],
-      links: [
-        { input: "subt:a", output: "step:x" },
-        { input: "subt2:a", output: "subt:x" },
-        { input: "inte:x", output: "subt2:x" },
-        { input: "subt2:b", output: "mult:x" },
-        { input: "subt:b", output: "inte:sx" },
-        { input: "inte2:x", output: "inte:sx" },
-        { input: "mult:a", output: "inte2:sx" },
-      ],
-    })
+    createSchema(
+      validInitialSchema || {
+        nodes: [
+          {
+            id: "step",
+            data: { type: "step" },
+            content: "step:step",
+            coordinates: [66, 60],
+            render: CustomNode,
+            inputs: [
+              {
+                id: "step:length",
+                content: "length",
+                data: { type: "float" },
+                alignment: "left",
+              },
+            ],
+            outputs: [
+              {
+                id: "step:x",
+                content: "x",
+                data: { type: "float" },
+                alignment: "right",
+              },
+            ],
+          },
+          {
+            id: "inte",
+            data: { type: "integrate" },
+            content: "integrate:inte",
+            coordinates: [540, 7],
+            render: CustomNode,
+            inputs: [
+              {
+                id: "inte:x",
+                content: "x",
+                data: { type: "float" },
+                alignment: "left",
+              },
+            ],
+            outputs: [
+              {
+                id: "inte:sx",
+                content: "sx",
+                data: { type: "float" },
+                alignment: "right",
+              },
+            ],
+          },
+          {
+            id: "subt",
+            data: { type: "subtract" },
+            content: "subtract:subt",
+            coordinates: [235, 27],
+            render: CustomNode,
+            inputs: [
+              {
+                id: "subt:a",
+                content: "a",
+                data: { type: "float" },
+                alignment: "left",
+              },
+              {
+                id: "subt:b",
+                content: "b",
+                data: { type: "float" },
+                alignment: "left",
+              },
+            ],
+            outputs: [
+              {
+                id: "subt:x",
+                content: "x",
+                data: { type: "float" },
+                alignment: "right",
+              },
+            ],
+          },
+          {
+            id: "subt2",
+            data: { type: "subtract" },
+            content: "subtract:subt2",
+            coordinates: [381, 16],
+            render: CustomNode,
+            inputs: [
+              {
+                id: "subt2:a",
+                content: "a",
+                data: { type: "float" },
+                alignment: "left",
+              },
+              {
+                id: "subt2:b",
+                content: "b",
+                data: { type: "float" },
+                alignment: "left",
+              },
+            ],
+            outputs: [
+              {
+                id: "subt2:x",
+                content: "x",
+                data: { type: "float" },
+                alignment: "right",
+              },
+            ],
+          },
+          {
+            id: "mult",
+            data: { type: "multiply" },
+            content: "multiply:mult",
+            coordinates: [224, 164],
+            render: CustomNode,
+            inputs: [
+              {
+                id: "mult:a",
+                content: "a",
+                data: { type: "float" },
+                alignment: "left",
+              },
+              {
+                id: "mult:b",
+                content: "b",
+                data: { type: "float" },
+                alignment: "left",
+              },
+            ],
+            outputs: [
+              {
+                id: "mult:x",
+                content: "x",
+                data: { type: "float" },
+                alignment: "right",
+              },
+            ],
+          },
+          {
+            id: "inte2",
+            data: { type: "integrate" },
+            content: "integrate:inte2",
+            coordinates: [600, 126],
+            render: CustomNode,
+            inputs: [
+              {
+                id: "inte2:x",
+                content: "x",
+                data: { type: "float" },
+                alignment: "left",
+              },
+            ],
+            outputs: [
+              {
+                id: "inte2:sx",
+                content: "sx",
+                data: { type: "float" },
+                alignment: "right",
+              },
+            ],
+          },
+        ],
+        links: [
+          { input: "subt:a", output: "step:x" },
+          { input: "subt2:a", output: "subt:x" },
+          { input: "inte:x", output: "subt2:x" },
+          { input: "subt2:b", output: "mult:x" },
+          { input: "subt:b", output: "inte:sx" },
+          { input: "inte2:x", output: "inte:sx" },
+          { input: "mult:a", output: "inte2:sx" },
+        ],
+      }
+    )
   );
   const options = Object.keys(boxType);
   const [id, setId] = useState("");
@@ -342,12 +352,12 @@ const IoPage = (props) => {
   const { schema, separator, setRaw } = props;
   const [err, setErr] = useState("");
   const [io, setIo] = useState({});
-  const [varValue, setVarValue] = useState({
+  const [varValue, setVarValue] = useQState("varValue", {
     ":step:length": 1,
     ":mult:b": 2.3,
   });
-  const [stepCount, setStepCount] = useState(100);
-  const [stepSize, setStepSize] = useState(0.1);
+  const [stepCount, setStepCount] = useQState("stepCount", 100);
+  const [stepSize, setStepSize] = useQState("stepSize", 0.1);
   const handleVariable = (event) => {
     setVarValue({
       ...varValue,
@@ -427,9 +437,9 @@ const IoPage = (props) => {
 };
 
 const GraphPage = (props) => {
-  const { raw, separator } = props;
-  const [xAxis, setXAxis] = useState("length");
-  const [yAxis, setYAxis] = useState("length");
+  const { iden, raw, separator } = props;
+  const [xAxis, setXAxis] = useQState(iden + ".xAxis", "length");
+  const [yAxis, setYAxis] = useQState(iden + ".yAxis", "length");
   const extractXy = () => [
     [xAxis, yAxis],
     ...raw.map((line) => [line[xAxis], line[yAxis]]),
@@ -498,18 +508,22 @@ const GraphPage = (props) => {
 function App() {
   // keep raw data as list of dict
   const separator = ":";
-  const [schema, setSchema] = useState({});
+  const [schema, setSchema] = useQState("schema", {});
   const [raw, setRaw] = useState([]);
   return (
     <div className="App">
       <SplitterLayout vertical>
         <SplitterLayout secondaryInitialSize={300}>
-          <DiagramPage setSchema={setSchema} separator={separator} />
+          <DiagramPage
+            initialSchema={schema}
+            setSchema={setSchema}
+            separator={separator}
+          />
           <IoPage schema={schema} separator={separator} setRaw={setRaw} />
         </SplitterLayout>
         <SplitterLayout>
-          <GraphPage raw={raw} separator={separator} />
-          <GraphPage raw={raw} separator={separator} />
+          <GraphPage iden="l" raw={raw} separator={separator} />
+          <GraphPage iden="r" raw={raw} separator={separator} />
         </SplitterLayout>
       </SplitterLayout>
     </div>
