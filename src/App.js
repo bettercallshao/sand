@@ -53,7 +53,6 @@ const boxFromDiagram = (schema, varValue, config) => {
     []
   );
   return {
-    Version: "v1",
     Box: box,
     Variable: variable,
     Config: { ...config },
@@ -386,6 +385,9 @@ const IoPage = (props) => {
   }, [io, setErr, setRaw]);
   return (
     <div style={{ textAlign: "right" }}>
+      <a href="https://github.com/bettercallshao/sand">
+        {process.env.REACT_APP_VERSION}
+      </a>
       {err}
       <form
         onSubmit={(event) => {

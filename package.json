@@ -20,8 +20,8 @@
     "web-vitals": "^1.1.1"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "export REACT_APP_VERSION=`git describe --tags`-`git log -1 --format=%cd --date=format:\"%Y%m%d%H%M%S\"` && react-scripts start",
+    "build": "export REACT_APP_VERSION=`git describe --tags`-`git log -1 --format=%cd --date=format:\"%Y%m%d%H%M%S\"` && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

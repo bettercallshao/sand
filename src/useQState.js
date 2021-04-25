@@ -11,10 +11,6 @@ function unidecode(str) {
   return Msgpack.decode(Base65536.decode(str));
 }
 
-// let o = {foo:'bar',baz:[1,2,3,4,5],quux:'corge'};
-// console.log(uniencode(o).length,JSON.stringify(o).length); // 24, 46
-// console.log(uniencode(o))
-
 const setQueryStringWithoutPageReload = (qsValue) => {
   const newurl =
     window.location.protocol +
