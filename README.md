@@ -6,6 +6,8 @@
 
 Try simulations easily. https://sand.bettercallshao.com/
 
+![screenshot](https://i.imgur.com/2NGh7CF.png)
+
 ## Why does this exist?
 
 In college, I enjoyed playing with dynamic solvers, including LT-SPICE, Ansys, SolidWorks, but most of all MATLAB / Simulink. One day, I was trying to explain to my wife (a financier) how to use [_Gain Margin_](https://en.wikipedia.org/wiki/Bode_plot#Gain_margin_and_phase_margin) to gauge the stability of a system, ending up having to explain what is a linear system and a state space. It came off as very vague and mystical, but I rather believe a second order linear system is the simplest system to study properly and rationalize about, and one can gain a great deal of confidence in the natural world by understanding a linear system. But most people don't learn it in school, and instead rely on conventional wisdoms of various kinds to dictate their everyday decision making. Therefore, I am trying preach the useful concepts arising from studying linear systems, and **sand** is created as an accessible tool capable of simple simulations that helps with the preaching. For serious scientific research, I believe Simulink is great, and Xcos is a great alternative.
