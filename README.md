@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/tag/bettercallshao/sand.svg)](https://github.com/bettercallshao/sand/tags)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](/LICENSE.md)
-[![Netlify](https://img.shields.io/netlify/382df462-41d7-4664-b03d-f8cbb66fe139)](<(https://app.netlify.com/sites/upbeat-mccarthy-c842b6/deploys)>)
+[![Netlify](https://img.shields.io/netlify/382df462-41d7-4664-b03d-f8cbb66fe139)](https://app.netlify.com/sites/upbeat-mccarthy-c842b6/deploys)
 
 Try dynamic simulations easily.
 
@@ -37,10 +37,12 @@ Bottom quadrants are scatter plot **Graphs** of variables against each other. **
 
 The app is always saved in the URL itself. The URL alone captures all of the states, and can be bookmarked or shared. Since the URL is long, for a better sharing experience, consider shortening it with [tinyurl](https://tinyurl.com/app). E.g.
 
-- 2nd order with step input: tinyurl.com/h4t3r7a7
+- 2nd order with step input: https://tinyurl.com/h4t3r7a7
 
 ## What next?
 
+- More box types, e.g. Dirac, division, square, triangle, etc.
+- When states are long, URL may explode. Probably need another way to share.
 - The diagram library is kinda ugly, especially the links don't bend gracefully and get hidden behind the boxes.
 - Link creation is not validated, connecting two inputs or two outputs doesn't make sense and will make the system invalid.
 - Convergence of state is not detected and the solver always runs certain number of steps.
