@@ -4,7 +4,7 @@
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](/LICENSE.md)
 [![Netlify](https://img.shields.io/netlify/382df462-41d7-4664-b03d-f8cbb66fe139)](https://app.netlify.com/sites/upbeat-mccarthy-c842b6/deploys)
 
-Try dynamic simulations easily.
+Try simulations easily.
 
 ## Why does this exist?
 
