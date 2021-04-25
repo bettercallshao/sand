@@ -1,14 +1,16 @@
 import { useState, useCallback } from "react";
 import qs from "query-string";
-import Msgpack from "msgpack-lite";
-const Base65536 = require("base65536");
+// import Msgpack from "msgpack-lite";
+// const Base65536 = require("base65536");
 
-function uniencode(obj) {
-  return Base65536.encode(Msgpack.encode(obj));
+function encode(obj) {
+  // return Base65536.encode(Msgpack.encode(obj));
+  return JSON.stringify(obj);
 }
 
-function unidecode(str) {
-  return Msgpack.decode(Base65536.decode(str));
+function decode(str) {
+  // return Msgpack.decode(Base65536.decode(str));
+  return JSON.parse(str);
 }
 
 const setQueryStringWithoutPageReload = (qsValue) => {
@@ -28,13 +30,13 @@ const setQueryStringValue = (
   queryString = window.location.search
 ) => {
   const values = qs.parse(queryString);
-  const newQsValue = qs.stringify({ ...values, [key]: uniencode(value) });
+  const newQsValue = qs.stringify({ ...values, [key]: encode(value) });
   setQueryStringWithoutPageReload(`?${newQsValue}`);
 };
 
 const getQueryStringValue = (key, queryString = window.location.search) => {
   const values = qs.parse(queryString);
-  return values[key] ? unidecode(values[key]) : values[key];
+  return values[key] ? decode(values[key]) : values[key];
 };
 
 function useQState(key, initialValue) {
